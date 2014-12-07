@@ -115,13 +115,17 @@ void loop() {
 
 
 double Thermistor(int RawADC) {
+  double FirstTemp;
+  for (int i; i=0; i < 5) {
   double Temp;
   Temp =  log(10000.0 / (1024.0 / RawADC - 1));
   //         log(10000.0*((1024.0/RawADC-1))); // for pull-down configuration
   Temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * Temp * Temp )) * Temp );
   Temp = Temp - 273.15;            // Convert Kelvin to Celsius
   Temp = (Temp * 9.0) / 5.0 + 32.0; // Convert Celsius to Fahrenheit
-  return Temp;
+  FirstTemp += Temp;
+  }
+  return FirstTemp/5;
 }
 
 void handleRing () {
