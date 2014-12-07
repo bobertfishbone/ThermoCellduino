@@ -74,13 +74,26 @@ void loop() {
 
   String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
   msgString.toCharArray(msg, 60);
-
+  // If I got a text, figure out wtf it means and respond accordingly
   if (ringing) handleRing();
 
+  // If the temperature of A, B, and C is less than one degree less than the setpoint:
+  if ((aTemp < (setTemp - 1)) && (bTemp < (setTemp - 1) ) && (cTemp < (setTemp - 1))) {
+    // If sent is true, then set sent = false
+    if (sent) {
+      sent = false;
+    }
+    // Otherwise if sent is already false, do nothing.
+    else {
 
-  if ((aTemp > setTemp) || (bTemp > setTemp) || (cTemp > setTemp)) {
+    }
 
+  }
+  // If the temperature of A, B, and C is NOT less than one degree less than the setpoint, check
+  // to see if A, B, or C is greater than the setpoint.
+  else if ((aTemp > setTemp) || (bTemp > setTemp) || (cTemp > setTemp)) {
 
+    //If so, and sent is false, then send SMS
     if (!sent) {
       sent = true;
       Serial.println(msgString);
@@ -93,21 +106,18 @@ void loop() {
       }
 
     }
-
-    if (sent) {
+    //Otherwise sent is true; don't send anything
+    else {
       Serial.println(msgString);
     }
 
   }
-
-  if ((aTemp < (setTemp - 2)) && (bTemp < (setTemp - 2) ) && (cTemp < (setTemp - 2))) {
-
-    if (sent) {
-      sent = false;
-    }
-
+  // If A, B, C is NOT less than one degree less than the setpoint, and NOT greater than the setpoint,
+  // do nothing.
+  else {
 
   }
+
 
 }
 
@@ -116,16 +126,16 @@ void loop() {
 
 double Thermistor(int RawADC) {
   double FirstTemp;
-  for (int i; i=0; i < 5) {
-  double Temp;
-  Temp =  log(10000.0 / (1024.0 / RawADC - 1));
-  //         log(10000.0*((1024.0/RawADC-1))); // for pull-down configuration
-  Temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * Temp * Temp )) * Temp );
-  Temp = Temp - 273.15;            // Convert Kelvin to Celsius
-  Temp = (Temp * 9.0) / 5.0 + 32.0; // Convert Celsius to Fahrenheit
-  FirstTemp += Temp;
+  for (int i; i = 0; i < 5) {
+    double Temp;
+    Temp =  log(10000.0 / (1024.0 / RawADC - 1));
+    //         log(10000.0*((1024.0/RawADC-1))); // for pull-down configuration
+    Temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * Temp * Temp )) * Temp );
+    Temp = Temp - 273.15;            // Convert Kelvin to Celsius
+    Temp = (Temp * 9.0) / 5.0 + 32.0; // Convert Celsius to Fahrenheit
+    FirstTemp += Temp;
   }
-  return FirstTemp/5;
+  return FirstTemp / 5;
 }
 
 void handleRing () {
