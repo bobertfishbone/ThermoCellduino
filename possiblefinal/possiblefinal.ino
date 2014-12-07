@@ -74,6 +74,7 @@ void loop() {
 
   String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
   msgString.toCharArray(msg, 60);
+        Serial.println(msgString);
   // If I got a text, figure out wtf it means and respond accordingly
   if (ringing) handleRing();
 
@@ -81,11 +82,12 @@ void loop() {
   if ((aTemp < (setTemp - 1)) && (bTemp < (setTemp - 1) ) && (cTemp < (setTemp - 1))) {
     // If sent is true, then set sent = false
     if (sent) {
+      Serial.println(F("Setting sent to false!"));
       sent = false;
     }
     // Otherwise if sent is already false, do nothing.
     else {
-
+      Serial.println(F("Sent is already false!"));
     }
 
   }
@@ -95,6 +97,7 @@ void loop() {
 
     //If so, and sent is false, then send SMS
     if (!sent) {
+            Serial.println(F("A temp is high, and sent is false!"));
       sent = true;
       Serial.println(msgString);
 
@@ -108,14 +111,14 @@ void loop() {
     }
     //Otherwise sent is true; don't send anything
     else {
-      Serial.println(msgString);
+      Serial.println(F("Sent is already true."));
     }
 
   }
   // If A, B, C is NOT less than one degree less than the setpoint, and NOT greater than the setpoint,
   // do nothing.
   else {
-
+      Serial.println(F("Not too high, not too low. Just chill out."));
   }
 
 
