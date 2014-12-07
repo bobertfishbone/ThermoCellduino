@@ -72,12 +72,14 @@ void loop() {
   bTemp = int(Thermistor(analogRead(1)));
   cTemp = int(Thermistor(analogRead(2)));
 
+  String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
+  msgString.toCharArray(msg, 60);
+
   if (ringing) handleRing();
 
 
   if ((aTemp > setTemp) || (bTemp > setTemp) || (cTemp > setTemp)) {
-    String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
-    msgString.toCharArray(msg, 60);
+
 
     if (!sent) {
       sent = true;
