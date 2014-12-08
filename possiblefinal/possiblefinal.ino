@@ -58,7 +58,6 @@ void setup() {
   bTemp = int(Thermistor(analogRead(1)));
   cTemp = int(Thermistor(analogRead(2)));
 
-  Serial.begin(9600);
 
   attachInterrupt(1, ringInterrupt, FALLING);
   deleteSMS();
@@ -78,8 +77,8 @@ void loop() {
   // If I got a text, figure out wtf it means and respond accordingly
   if (ringing) handleRing();
 
-  // If the temperature of A, B, and C is less than one degree less than the setpoint:
-  if ((aTemp < (setTemp - 1)) && (bTemp < (setTemp - 1) ) && (cTemp < (setTemp - 1))) {
+  // If the temperature of A, B, and C is lower than one degree less than the setpoint:
+  if ((aTemp < (setTemp - 2)) && (bTemp < (setTemp - 2) ) && (cTemp < (setTemp - 2))) {
     // If sent is true, then set sent = false
     if (sent) {
       Serial.println(F("Setting sent to false!"));
@@ -128,17 +127,13 @@ void loop() {
 
 
 double Thermistor(int RawADC) {
-  double FirstTemp;
-  for (int i; i = 0; i < 5) {
     double Temp;
     Temp =  log(10000.0 / (1024.0 / RawADC - 1));
     //         log(10000.0*((1024.0/RawADC-1))); // for pull-down configuration
     Temp = 1 / (0.001129148 + (0.000234125 + (0.0000000876741 * Temp * Temp )) * Temp );
     Temp = Temp - 273.15;            // Convert Kelvin to Celsius
     Temp = (Temp * 9.0) / 5.0 + 32.0; // Convert Celsius to Fahrenheit
-    FirstTemp += Temp;
-  }
-  return FirstTemp / 5;
+  return Temp;
 }
 
 void handleRing () {
@@ -273,7 +268,13 @@ boolean fonaSendConfirmSMS (char *recipient, int setTemp) {
   char sms_response[52];
   int addr = 0;
   EEPROM.write(0, setTemp);
-  sprintf (sms_response, "Your temperature has been set to %d", setTemp);
+    aTemp = int(Thermistor(analogRead(0)));
+  bTemp = int(Thermistor(analogRead(1)));
+  cTemp = int(Thermistor(analogRead(2)));
+
+  String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
+  msgString.toCharArray(msg, 60);
+  sprintf (sms_response, msg);
 
   return fona.sendSMS(recipient, sms_response);
 }
