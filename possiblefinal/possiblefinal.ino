@@ -51,28 +51,28 @@ void setup() {
   }
 
   while (1) {
-    Serial.println(F("Waiting for Fona to start"));
+//    Serial.println(F("Waiting for Fona to start"));
     boolean fonaStarted = fona.begin(4800);
     if (fonaStarted) break;
     delay (1000);
   }
-  Serial.println(F("Fona Started!"));
+//  Serial.println(F("Fona Started!"));
   while (1) {
-    Serial.println(F("Waiting for network status"));
+//    Serial.println(F("Waiting for network status"));
     uint8_t network_status = fona.getNetworkStatus();
     if (network_status == 1 || network_status == 5) break;
     delay(250);
   }
-  Serial.println(F("Network found!"));
-  aTemp = int(Thermistor(analogRead(0)));
-  bTemp = int(Thermistor(analogRead(1)));
-  cTemp = int(Thermistor(analogRead(2)));
+//  Serial.println(F("Network found!"));
+  aTemp = int(RETURN_TEMP(analogRead(0)));
+  bTemp = int(RETURN_TEMP(analogRead(1)));
+  cTemp = int(RETURN_TEMP(analogRead(2)));
 
 
   attachInterrupt(1, ringInterrupt, FALLING);
   deleteSMS();
-  Serial.println("I'm here!");
-  Serial.println(MY_PHONE_NUMBER);
+//  Serial.println("I'm here!");
+//  Serial.println(MY_PHONE_NUMBER);
 }
 
 void loop() {
@@ -81,32 +81,34 @@ void loop() {
   if(currentMillis - previousMillis > interval) {
     previousMillis = currentMillis;
 
-    Serial.println(sent);
+   // Serial.println(sent);
     aTemp = int(RETURN_TEMP(analogRead(0)));
 
     bTemp = int(RETURN_TEMP(analogRead(1)));
 
     cTemp = int(RETURN_TEMP(analogRead(2)));
 
-    Serial.print(RETURN_TEMP(analogRead(0)));
-    Serial.print(F("    "));
-    Serial.print(RETURN_TEMP(analogRead(1)));
-    Serial.print(F("    "));
-    Serial.println(RETURN_TEMP(analogRead(2)));
+//    Serial.print(RETURN_TEMP(analogRead(0)));
+//    Serial.print(F("    "));
+//    Serial.print(RETURN_TEMP(analogRead(1)));
+//    Serial.print(F("    "));
+//    Serial.println(RETURN_TEMP(analogRead(2)));
+    
+    SerialPrinttoProcessing();
     
     String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
     msgString.toCharArray(msg, 60);
-    Serial.println(msgString);
+//    Serial.println(msgString);
     // If the temperature of A, B, and C is lower than one degree less than the setpoint:
     if ((aTemp < (setTemp - 2)) && (bTemp < (setTemp - 2) ) && (cTemp < (setTemp - 2))) {
       // If sent is true, then set sent = false
       if (sent) {
-        Serial.println(F("Setting sent to false!"));
+//        Serial.println(F("Setting sent to false!"));
         sent = false;
       }
       // Otherwise if sent is already false, do nothing.
       else {
-        Serial.println(F("Sent is already false!"));
+//        Serial.println(F("Sent is already false!"));
       }
 
     }
@@ -116,28 +118,28 @@ void loop() {
 
       //If so, and sent is false, then send SMS
       if (!sent) {
-        Serial.println(F("A temp is high, and sent is false!"));
+//        Serial.println(F("A temp is high, and sent is false!"));
         sent = true;
-        Serial.println(msgString);
+//        Serial.println(msgString);
 
         if (fonaSendTempSMS(MY_PHONE_NUMBER)) {
-          Serial.println(F(" sent."));
+//          Serial.println(F(" sent."));
         }
         else {
-          Serial.println(F(" failed!"));
+ //         Serial.println(F(" failed!"));
         }
 
       }
       //Otherwise sent is true; don't send anything
       else {
-        Serial.println(F("Sent is already true."));
+//        Serial.println(F("Sent is already true."));
       }
 
     }
     // If A, B, C is NOT less than one degree less than the setpoint, and NOT greater than the setpoint,
     // do nothing.
     else {
-      Serial.println(F("Not too high, not too low. Just chill out."));
+//      Serial.println(F("Not too high, not too low. Just chill out."));
     }
 
   }
@@ -314,9 +316,9 @@ boolean fonaSendConfirmSMS (char * recipient, int setTemp) {
   char sms_response[52];
   int addr = 0;
   EEPROM.write(0, setTemp);
-  aTemp = int(Thermistor(analogRead(0)));
-  bTemp = int(Thermistor(analogRead(1)));
-  cTemp = int(Thermistor(analogRead(2)));
+  aTemp = int(RETURN_TEMP(analogRead(0)));
+  bTemp = int(RETURN_TEMP(analogRead(1)));
+  cTemp = int(RETURN_TEMP(analogRead(2)));
 
   String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
   msgString.toCharArray(msg, 60);
@@ -330,10 +332,10 @@ void deleteSMS() {
   int8_t smsnum = fona.getNumSMS();
   uint16_t smslen;
   for (int8_t smsn = 1; smsn <= smsnum; smsn++) {
-    Serial.print(F("\n\rDeleting SMS #")); 
-    Serial.println(smsn);
+//    Serial.print(F("\n\rDeleting SMS #")); 
+//    Serial.println(smsn);
     if (!fona.deleteSMS(smsn)) {
-      Serial.println(F("Failed!"));
+//      Serial.println(F("Failed!"));
       break;
     }
   }
@@ -359,3 +361,29 @@ int RETURN_TEMP(float val){
   return tempVal;
 }
 
+void SerialPrinttoProcessing()
+{
+  char separator[] = " | ";
+   int sensorValue = RETURN_TEMP(analogRead(A0));
+           Serial.print("Bottom"); //Label for the sensor
+        Serial.print(":"); //Seperator between values
+    Serial.print(sensorValue, DEC); //Actual value
+
+Serial.print(separator);//Separate different readings
+
+   int sensorValue2 = RETURN_TEMP(analogRead(A1));
+   
+        Serial.print("Middle"); //Label for the sensor
+        Serial.print(":"); //Seperator between values
+    Serial.print(sensorValue2, DEC); //Actual value
+  
+  Serial.print(separator);//Separate different readings
+
+   int sensorValue3 = RETURN_TEMP(analogRead(A2));
+   
+        Serial.print("Top"); //Label for the sensor
+        Serial.print(":"); //Seperator between values
+    Serial.print(sensorValue3, DEC); //Actual value
+  
+   Serial.println();
+}
