@@ -12,6 +12,18 @@
 #define BCOEFFICIENT 3800 // Beta Coefficient of Thermistor used Normally between 3000-4000
 #define SERIESRESISTOR 10000 // Series Resistor Value 10K here up to VCC 5V
 
+unsigned const numReadings = 20;
+unsigned int temp1Array[numReadings];
+unsigned int temp2Array[numReadings];
+unsigned int temp3Array[numReadings];
+unsigned int arrayCount = 0;
+unsigned int totalA = 0;
+unsigned int totalB = 0;
+unsigned int totalC = 0;
+unsigned int averageA = 0;
+unsigned int averageB = 0;
+unsigned int averageC = 0;
+
 
 const int RX = 8;
 const int TX = 9;
@@ -25,7 +37,7 @@ unsigned int bTemp = 50;
 unsigned int cTemp = 50;
 
 long previousMillis = 0;
-long interval = 2000;
+long interval = 200;
 
 char msg[60];
 char readMsg[50];
@@ -64,9 +76,9 @@ void setup() {
     delay(250);
   }
   Serial.println(F("Network found!"));
-  aTemp = int(RETURN_TEMP(analogRead(0)));
-  bTemp = int(RETURN_TEMP(analogRead(1)));
-  cTemp = int(RETURN_TEMP(analogRead(2)));
+  aTemp = int(ThermistorAvg(analogRead(0)));
+  bTemp = int(ThermistorAvg(analogRead(1)));
+  cTemp = int(ThermistorAvg(analogRead(2)));
 
 
   attachInterrupt(1, ringInterrupt, FALLING);
@@ -82,67 +94,86 @@ void loop() {
   if(currentMillis - previousMillis > interval) {
     previousMillis = currentMillis;
 
-   // Serial.println(sent);
+    // Serial.println(sent);
     aTemp = int(RETURN_TEMP(analogRead(0)));
 
     bTemp = int(RETURN_TEMP(analogRead(1)));
 
     cTemp = int(RETURN_TEMP(analogRead(2)));
 
-//    Serial.print(RETURN_TEMP(analogRead(0)));
-//    Serial.print(F("    "));
-//    Serial.print(RETURN_TEMP(analogRead(1)));
-//    Serial.print(F("    "));
-//    Serial.println(RETURN_TEMP(analogRead(2)));
+    //    Serial.print(RETURN_TEMP(analogRead(0)));
+    //    Serial.print(F("    "));
+    //    Serial.print(RETURN_TEMP(analogRead(1)));
+    //    Serial.print(F("    "));
+    //    Serial.println(RETURN_TEMP(analogRead(2)));
+
+    totalA = totalA - temp1Array[arrayCount];
+    totalB = totalB - temp2Array[arrayCount];
+    totalC = totalC - temp3Array[arrayCount];
+
+    temp1Array[arrayCount] = aTemp;
+    temp2Array[arrayCount] = bTemp;
+    temp3Array[arrayCount] = cTemp;
+
+    totalA = totalA + temp1Array[arrayCount];
+    totalB = totalB + temp2Array[arrayCount];
+    totalC = totalC + temp3Array[arrayCount];
     
+    averageA = totalA / numReadings;
+    averageB = totalB / numReadings;
+    averageC = totalC / numReadings;
+
     SerialPrinttoProcessing();
-    
-    String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
+
+    String msgString = A + averageA + B + averageB + C + averageC + set + setTemp;
     msgString.toCharArray(msg, 60);
-//    Serial.println(msgString);
+    //    Serial.println(msgString);
     // If the temperature of A, B, and C is lower than one degree less than the setpoint:
-    if ((aTemp < (setTemp - 2)) && (bTemp < (setTemp - 2) ) && (cTemp < (setTemp - 2))) {
+    if ((averageA < (setTemp - 2)) && (averageB < (setTemp - 2) ) && (averageC < (setTemp - 2))) {
       // If sent is true, then set sent = false
       if (sent) {
-//        Serial.println(F("Setting sent to false!"));
+        //        Serial.println(F("Setting sent to false!"));
         sent = false;
       }
       // Otherwise if sent is already false, do nothing.
       else {
-//        Serial.println(F("Sent is already false!"));
+        //        Serial.println(F("Sent is already false!"));
       }
 
     }
     // If the temperature of A, B, and C is NOT less than one degree less than the setpoint, check
     // to see if A, B, or C is greater than the setpoint.
-    else if ((aTemp > setTemp) || (bTemp > setTemp) || (cTemp > setTemp)) {
+    else if ((averageA > setTemp) || (averageB > setTemp) || (averageC > setTemp)) {
 
       //If so, and sent is false, then send SMS
       if (!sent) {
-//        Serial.println(F("A temp is high, and sent is false!"));
+        //        Serial.println(F("A temp is high, and sent is false!"));
         sent = true;
-//        Serial.println(msgString);
+        //        Serial.println(msgString);
 
         if (fonaSendTempSMS(MY_PHONE_NUMBER)) {
-//          Serial.println(F(" sent."));
+          //          Serial.println(F(" sent."));
         }
         else {
- //         Serial.println(F(" failed!"));
+          //         Serial.println(F(" failed!"));
         }
 
       }
       //Otherwise sent is true; don't send anything
       else {
-//        Serial.println(F("Sent is already true."));
+        //        Serial.println(F("Sent is already true."));
       }
 
     }
     // If A, B, C is NOT less than one degree less than the setpoint, and NOT greater than the setpoint,
     // do nothing.
     else {
-//      Serial.println(F("Not too high, not too low. Just chill out."));
+      //      Serial.println(F("Not too high, not too low. Just chill out."));
     }
-
+    arrayCount++;
+    if (arrayCount >= numReadings){
+      arrayCount = 0; 
+    }
   }
 }
 
@@ -154,7 +185,6 @@ double ThermistorAvg(int RawADC) {
     double temp1 = 0;
     for (int i = 0; i < 10; i++) {
       temp1 += RETURN_TEMP(RawADC);
-      delay(10);
     }
     temp2 = temp2 + (temp1 / 10);
   }
@@ -217,7 +247,7 @@ void handleRing () {
         // If it matches our pre-defined command string...
         if (strcmp(sms_buffer, "Temp") == 0) {
           Serial.print(F("  Responding with temperature..."));
-          String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
+          String msgString = A + averageA + B + averageB + C + averageC + set + setTemp;
           msgString.toCharArray(msg, 60);
           if (fonaSendTempSMS(MY_PHONE_NUMBER)) {
             Serial.println(F(" sent."));
@@ -317,11 +347,11 @@ boolean fonaSendConfirmSMS (char * recipient, int setTemp) {
   char sms_response[52];
   int addr = 0;
   EEPROM.write(0, setTemp);
-  aTemp = int(RETURN_TEMP(analogRead(0)));
-  bTemp = int(RETURN_TEMP(analogRead(1)));
-  cTemp = int(RETURN_TEMP(analogRead(2)));
+  aTemp = int(ThermistorAvg(analogRead(0)));
+  bTemp = int(ThermistorAvg(analogRead(1)));
+  cTemp = int(ThermistorAvg(analogRead(2)));
 
-  String msgString = A + aTemp + B + bTemp + C + cTemp + set + setTemp;
+  String msgString = A + averageA + B + averageB + C + averageC + set + setTemp;
   msgString.toCharArray(msg, 60);
   sprintf (sms_response, msg);
 
@@ -333,10 +363,10 @@ void deleteSMS() {
   int8_t smsnum = fona.getNumSMS();
   uint16_t smslen;
   for (int8_t smsn = 1; smsn <= smsnum; smsn++) {
-//    Serial.print(F("\n\rDeleting SMS #")); 
-//    Serial.println(smsn);
+    //    Serial.print(F("\n\rDeleting SMS #")); 
+    //    Serial.println(smsn);
     if (!fona.deleteSMS(smsn)) {
-//      Serial.println(F("Failed!"));
+      //      Serial.println(F("Failed!"));
       break;
     }
   }
@@ -365,26 +395,30 @@ int RETURN_TEMP(float val){
 void SerialPrinttoProcessing()
 {
   char separator[] = " | ";
-   int sensorValue = RETURN_TEMP(analogRead(A0));
-           Serial.print("Bottom"); //Label for the sensor
-        Serial.print(":"); //Seperator between values
-    Serial.print(sensorValue, DEC); //Actual value
+  int sensorValue = averageA;
+  Serial.print("Bottom"); //Label for the sensor
+  Serial.print(":"); //Seperator between values
+  Serial.print(sensorValue, DEC); //Actual value
 
-Serial.print(separator);//Separate different readings
-
-   int sensorValue2 = RETURN_TEMP(analogRead(A1));
-   
-        Serial.print("Middle"); //Label for the sensor
-        Serial.print(":"); //Seperator between values
-    Serial.print(sensorValue2, DEC); //Actual value
-  
   Serial.print(separator);//Separate different readings
 
-   int sensorValue3 = RETURN_TEMP(analogRead(A2));
-   
-        Serial.print("Top"); //Label for the sensor
-        Serial.print(":"); //Seperator between values
-    Serial.print(sensorValue3, DEC); //Actual value
-  
-   Serial.println();
+  int sensorValue2 = averageB;
+
+  Serial.print("Middle"); //Label for the sensor
+  Serial.print(":"); //Seperator between values
+  Serial.print(sensorValue2, DEC); //Actual value
+
+  Serial.print(separator);//Separate different readings
+
+  int sensorValue3 = averageC;
+
+  Serial.print("Top"); //Label for the sensor
+  Serial.print(":"); //Seperator between values
+  Serial.print(sensorValue3, DEC); //Actual value
+
+  Serial.println();
 }
+
+
+
+
