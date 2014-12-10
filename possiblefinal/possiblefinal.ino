@@ -51,19 +51,19 @@ void setup() {
   }
 
   while (1) {
-//    Serial.println(F("Waiting for Fona to start"));
+    Serial.println(F("Waiting for Fona to start"));
     boolean fonaStarted = fona.begin(4800);
     if (fonaStarted) break;
     delay (1000);
   }
-//  Serial.println(F("Fona Started!"));
+  Serial.println(F("Fona Started!"));
   while (1) {
-//    Serial.println(F("Waiting for network status"));
+    Serial.println(F("Waiting for network status"));
     uint8_t network_status = fona.getNetworkStatus();
     if (network_status == 1 || network_status == 5) break;
     delay(250);
   }
-//  Serial.println(F("Network found!"));
+  Serial.println(F("Network found!"));
   aTemp = int(RETURN_TEMP(analogRead(0)));
   bTemp = int(RETURN_TEMP(analogRead(1)));
   cTemp = int(RETURN_TEMP(analogRead(2)));
@@ -71,8 +71,9 @@ void setup() {
 
   attachInterrupt(1, ringInterrupt, FALLING);
   deleteSMS();
-//  Serial.println("I'm here!");
-//  Serial.println(MY_PHONE_NUMBER);
+  Serial.println("I'm here!");
+
+  Serial.println(MY_PHONE_NUMBER);
 }
 
 void loop() {
